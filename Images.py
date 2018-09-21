@@ -1,4 +1,7 @@
 import array
+from builtins import range, open
+from os.path import basename, splitext
+
 import png
 
 
@@ -18,34 +21,41 @@ class Images:
         self.save_pixels(pixels, width, height, pixel_byte_width)
 
     def load_image(self, filename):
-        reader = png.Reader(filename='Images/apple_alpha_1.1.png')
+        reader = png.Reader(filename=filename)
         width, height, raw_pixels, metadata = reader.read()
+        full_file_name = basename(reader.file.name)
 
         pixel_byte_width = 4 if metadata['alpha'] else 3
         pixels = self.convert_to_lists(raw_pixels, pixel_byte_width)
 
         pixels = self.process_pixels(pixels, width, height, pixel_byte_width)
 
-        self.save_image(pixels, width, height, metadata)
+        self.save_image(pixels, width, height, metadata, full_file_name)
 
     def process_pixels(self, pixels, width, height, pixel_byte_width):
         for i in range(0, width):
-            new_pixel = [0, i*10, 0, 255] if pixel_byte_width == 4 else [0, i, 0]
-            pixels[0][i] = new_pixel
+            for j in range(0, height):
+                color = pixels[i][j]
+                gray = int(round(color[0] * 0.3 + color[1] * 0.59 + color[2] * 0.11))
+                if gray != 0:
+                    c = gray
+                pixels[i][j] = [gray, gray, gray, color[3]] if pixel_byte_width == 4 else [gray, gray, gray]
 
         return pixels
 
-    def save_pixels(self, pixels, width, height, pixel_byte_width):
+    def save_pixels(self, pixels, width, height, pixel_byte_width, full_file_name):
         raw_pixels = self.convert_to_array(pixels, pixel_byte_width)
         output = open('image-with-red-dot.png', 'wb')
         writer = png.Writer(width, height)
         writer.write_array(output, raw_pixels)
         output.close()
 
-    def save_image(self, pixels, width, height, metadata):
+    def save_image(self, pixels, width, height, metadata, full_file_name):
         pixel_byte_width = 4 if metadata['alpha'] else 3
         raw_pixels = self.convert_to_array(pixels, pixel_byte_width)
-        output = open('image-with-red-dot.png', 'wb')
+        filename, extension = splitext(full_file_name)
+
+        output = open(filename + '_line' + extension, 'wb')
         writer = png.Writer(width, height, **metadata)
         writer.write_array(output, raw_pixels)
         output.close()
