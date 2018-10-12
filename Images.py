@@ -1,4 +1,5 @@
 import array
+import math
 from builtins import range, open
 from os.path import basename, splitext
 
@@ -44,25 +45,50 @@ class Images:
 
         self.pixel_byte_width = 4 if self.metadata['alpha'] else 3
         self.pixels = self.convert_to_lists(raw_pixels)
+        self.convert_pixels_to_int()
 
     def convert_to_gray(self):
-        for i in range(0, self.width):
-            for j in range(0, self.height):
+        for i in range(0, self.height):
+            for j in range(0, self.width):
                 color = self.pixels[i][j]
                 gray = int(round(color[0] * 0.3 + color[1] * 0.59 + color[2] * 0.11))
                 self.pixels[i][j] = [gray, gray, gray, color[3]] if self.pixel_byte_width == 4 else [gray, gray, gray]
 
         self.full_file_name = 'gray_' + self.full_file_name
+        self.convert_pixels_to_int()
 
-    def get_red(self):
-        red = [0] * 256
-        for i in range(0, self.width):
-            for j in range(0, self.height):
+    def get_amount_colors(self):
+        colors_amount = {
+            'red': [0] * 256,
+            'green': [0] * 256,
+            'blue': [0] * 256,
+        }
+        for i in range(0, self.height):
+            for j in range(0, self.width):
                 color = self.pixels[i][j]
-                red[color[0]] += 1
+                if self.pixel_byte_width == 4 and color[3] == 0:
+                    continue
+                colors_amount['red'][color[0]] += 1
+                colors_amount['green'][color[1]] += 1
+                colors_amount['blue'][color[2]] += 1
 
-        del red[0]
-        return red
+        del colors_amount['red'][0]
+        del colors_amount['green'][0]
+        del colors_amount['blue'][0]
+
+        return colors_amount
+
+    def set_log_correction(self, c_coef):
+        for i in range(0, self.height):
+            for j in range(0, self.width):
+                color = self.pixels[i][j]
+                if self.pixel_byte_width == 4 and color[3] == 0:
+                    continue
+                for color_number in range(0, 3):
+                    color[color_number] = c_coef * math.log(1 + color[color_number])
+
+        self.full_file_name = 'log_' + self.full_file_name
+        self.convert_pixels_to_int()
 
     def save_pixels(self, pixels, width, height, pixel_byte_width, full_file_name):
         raw_pixels = self.convert_to_array(pixels, pixel_byte_width)
@@ -105,6 +131,13 @@ class Images:
 
         return pixels
 
+    def convert_pixels_to_int(self):
+        for i in range(0, self.height):
+            for j in range(0, self.width):
+                color = self.pixels[i][j]
+                for c in range(0, len(color)):
+                    self.pixels[i][j][c] = int(self.pixels[i][j][c])
+
     def convert_to_array(self, pixels, pixel_width):
         merged_list = []
         for line in pixels:
@@ -112,5 +145,4 @@ class Images:
                 merged_list += pixel
 
         raw_pixels = array.array('B', merged_list)
-
         return raw_pixels
