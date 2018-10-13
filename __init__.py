@@ -3,7 +3,6 @@ import matplotlib.pyplot as plt
 
 
 def show_gistogram(colors_amount):
-
     x_labels = range(255)
 
     print(colors_amount['red'])
@@ -34,8 +33,9 @@ if __name__ == '__main__':
     # colors_amount = image.get_amount_colors()
     # show_gistogram(colors_amount)
 
+    image.set_filter()
     # image.convert_to_gray()
-    image.set_log_correction(15)
+    # image.set_log_correction(15)
 
     image.save_image()
 
